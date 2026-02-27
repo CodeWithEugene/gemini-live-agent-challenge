@@ -1,0 +1,58 @@
+# Cloud Build CI/CD pipeline — triggered on push to main branch
+# Configure in GCP Console > Cloud Build > Triggers
+#
+# Required substitution variables (set in the trigger):
+#   _GCP_PROJECT, _REGION, _GCS_BUCKET, _SERVICE_NAME
+
+steps:
+  # Step 1: Build the Docker image
+  - name: "gcr.io/cloud-builders/docker"
+    args:
+      - build
+      - "-t"
+      - "gcr.io/$PROJECT_ID/${_SERVICE_NAME}:$COMMIT_SHA"
+      - "-t"
+      - "gcr.io/$PROJECT_ID/${_SERVICE_NAME}:latest"
+      - "backend/"
+
+  # Step 2: Push image to Container Registry
+  - name: "gcr.io/cloud-builders/docker"
+    args:
+      - push
+      - "gcr.io/$PROJECT_ID/${_SERVICE_NAME}:$COMMIT_SHA"
+
+  - name: "gcr.io/cloud-builders/docker"
+    args:
+      - push
+      - "gcr.io/$PROJECT_ID/${_SERVICE_NAME}:latest"
+
+  # Step 3: Deploy to Cloud Run
+  - name: "gcr.io/google.com/cloudsdktool/cloud-sdk"
+    entrypoint: gcloud
+    args:
+      - run
+      - deploy
+      - "${_SERVICE_NAME}"
+      - "--image=gcr.io/$PROJECT_ID/${_SERVICE_NAME}:$COMMIT_SHA"
+      - "--platform=managed"
+      - "--region=${_REGION}"
+      - "--allow-unauthenticated"
+      - "--port=8080"
+      - "--timeout=3600"
+      - "--concurrency=80"
+      - "--min-instances=1"
+      - "--max-instances=10"
+      - "--memory=1Gi"
+      - "--set-env-vars=GOOGLE_CLOUD_PROJECT=$PROJECT_ID,GOOGLE_CLOUD_LOCATION=${_REGION},GCS_BUCKET_NAME=${_GCS_BUCKET}"
+
+substitutions:
+  _SERVICE_NAME: living-textbook-api
+  _REGION: us-central1
+  _GCS_BUCKET: living-textbook-assets
+
+images:
+  - "gcr.io/$PROJECT_ID/${_SERVICE_NAME}:$COMMIT_SHA"
+  - "gcr.io/$PROJECT_ID/${_SERVICE_NAME}:latest"
+
+options:
+  logging: CLOUD_LOGGING_ONLY

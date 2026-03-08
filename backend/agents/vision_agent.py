@@ -29,12 +29,14 @@ VISION_PROMPT = """You are an expert educational analyst.
 The user has captured a photo (likely of a textbook page, diagram, or homework problem)
 and asked: "{question}"
 
-Analyze the image carefully and respond ONLY with a JSON object (no markdown, no extra text):
+Describe ONLY what you actually see in the image. Do not infer or invent content that is not clearly visible.
+
+Respond ONLY with a JSON object (no markdown, no extra text):
 {{
   "subject": "<main academic subject, e.g. Biology, Physics, Mathematics>",
-  "topic": "<specific topic visible in the image, e.g. photosynthesis, quadratic equations>",
-  "context": "<brief description of what is shown in the image, 2-3 sentences>",
-  "question": "<restate the user's question clearly>"
+  "topic": "<specific topic clearly visible in the image>",
+  "context": "<2-3 sentences describing exactly what is in the image: text, labels, diagrams>",
+  "question": "<restate the user's question exactly>"
 }}"""
 
 

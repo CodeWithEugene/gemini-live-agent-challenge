@@ -24,16 +24,21 @@ def _get_client() -> genai.Client:
     return _client
 
 
-SCRIPT_PROMPT = """You are an expert educator creating a vivid, narrated explainer for a student.
+SCRIPT_PROMPT = """You are an expert educator creating a short, factual explainer for a student.
 
 Subject: {subject}
 Topic: {topic}
 Image Context: {context}
 Student's Question: {question}
 
-Create a clear, engaging explainer broken into 3-5 sections. Each section must have:
-- narration: 2-4 spoken sentences that explain one key concept clearly (age-appropriate, enthusiastic)
-- image_prompt: a detailed prompt for an AI image generator to create a clear educational diagram/illustration for that concept
+RULES:
+- Base your explanation ONLY on what is in the image and the student's question. Do not invent facts, examples, or concepts that are not clearly supported by the image or standard knowledge for that topic.
+- Use simple, concrete language. One idea per section. No filler, no vague enthusiasm, no "awesome" or "cool" padding.
+- Each section: 2-3 clear sentences that explain one specific point. Be direct.
+
+Create 3-4 sections. Each section must have:
+- narration: 2-3 spoken sentences, factual and clear
+- image_prompt: a concrete prompt for an educational diagram (what to draw, labels, style)
 
 Respond ONLY with a JSON object (no markdown, no extra text):
 {{
@@ -65,7 +70,7 @@ async def generate_script(vision_result: dict[str, Any]) -> dict[str, Any]:
         model=settings.gemini_flash_model,
         contents=[genai_types.Part.from_text(text=prompt)],
         config=genai_types.GenerateContentConfig(
-            temperature=0.7,
+            temperature=0.3,
             max_output_tokens=2048,
         ),
     )

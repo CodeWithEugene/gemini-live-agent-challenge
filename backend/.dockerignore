@@ -1,0 +1,20 @@
+# Never ship secrets or local paths into the image
+.env
+.env.*
+*.json
+!package.json
+
+# Python
+.venv
+venv
+__pycache__
+*.py[cod]
+*.egg-info
+.pytest_cache
+.mypy_cache
+
+# Git and IDE
+.git
+.gitignore
+.dockerignore
+*.md

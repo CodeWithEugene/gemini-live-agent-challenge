@@ -275,25 +275,8 @@ export default function Home() {
 
               <div className="flex justify-center">
                 <AudioRecorder
-                  onChunk={() => {
-                    // Audio chunks not used in text-question mode;
-                    // kept for future voice-to-text integration
-                  }}
-                  onStop={() => {
-                    // Voice question via Web Speech API fallback
-                    const SpeechRecognition =
-                      (window as any).SpeechRecognition ||
-                      (window as any).webkitSpeechRecognition;
-                    if (!SpeechRecognition) return;
-                    const recog = new SpeechRecognition();
-                    recog.lang = "en-US";
-                    recog.onresult = (e: any) => {
-                      const text = e.results[0][0].transcript;
-                      if (text && canAsk) {
-                        handleAskQuestion(text);
-                      }
-                    };
-                    recog.start();
+                  onTranscript={(text) => {
+                    if (text && canAsk) handleAskQuestion(text);
                   }}
                   disabled={!canAsk}
                 />

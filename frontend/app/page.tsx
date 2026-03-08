@@ -12,8 +12,12 @@ import { WSClient, type ServerMessage } from "@/lib/websocket";
 import { AudioPlayer } from "@/lib/audio";
 import type { Block } from "@/components/MediaBlock";
 
+// When running on localhost, always use the local backend; otherwise use env (e.g. production wss).
 const WS_URL =
-  process.env.NEXT_PUBLIC_WS_URL ?? "ws://localhost:8080/ws";
+  typeof window !== "undefined" &&
+  (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1")
+    ? "ws://localhost:8080/ws"
+    : (process.env.NEXT_PUBLIC_WS_URL ?? "ws://localhost:8080/ws");
 
 type AppState = "idle" | "photo_ready" | "streaming" | "done";
 
@@ -99,7 +103,10 @@ export default function Home() {
     const ws = new WSClient({
       url: WS_URL,
       onMessage: handleMessage,
-      onOpen: () => setWsConnected(true),
+      onOpen: () => {
+        setWsConnected(true);
+        setError((e) => (e === "Connection error. Retrying..." ? null : e));
+      },
       onClose: () => setWsConnected(false),
       onError: () => setError("Connection error. Retrying..."),
     });

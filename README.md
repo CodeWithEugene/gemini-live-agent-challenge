@@ -21,6 +21,63 @@ This is not a chatbot. It is a streaming, multimodal experience that eliminates 
 
 ## Architecture
 
+**System architecture diagram** — how the frontend, backend (Cloud Run), Vertex AI (Gemini), and Cloud Storage connect:
+
+```mermaid
+flowchart LR
+  subgraph User["👤 User"]
+    Browser["Browser\n(Next.js)"]
+  end
+
+  subgraph Frontend["Frontend (Vercel / static)"]
+    Camera["Camera / File Upload"]
+    Voice["Voice / Text Input"]
+    UI["Living Document UI\n(audio, text, images)"]
+  end
+
+  subgraph Backend["Backend (Cloud Run)"]
+    WS["FastAPI\nWebSocket /ws"]
+    Coordinator["ADK Coordinator"]
+    Vision["Vision Agent"]
+    Script["Script Agent"]
+    Visual["Visual Agent"]
+    Narrator["Narration Agent"]
+  end
+
+  subgraph VertexAI["Vertex AI (Gemini)"]
+    GeminiFlash["Gemini 2.0 Flash\n(vision + script)"]
+    Imagen["Imagen 3\n(diagrams)"]
+    LiveTTS["Gemini Live / TTS\n(audio)"]
+  end
+
+  subgraph GCP["Google Cloud"]
+    GCS["Cloud Storage\n(GCS bucket)"]
+  end
+
+  Browser --> Camera
+  Browser --> Voice
+  Camera --> WS
+  Voice --> WS
+  WS --> Coordinator
+  Coordinator --> Vision
+  Coordinator --> Script
+  Vision --> GeminiFlash
+  Script --> GeminiFlash
+  Coordinator --> Visual
+  Coordinator --> Narrator
+  Visual --> Imagen
+  Imagen --> GCS
+  GCS --> Browser
+  Narrator --> LiveTTS
+  LiveTTS --> WS
+  WS --> UI
+  Script --> WS
+```
+
+**Data flow:** Frontend sends photo + question over WebSocket to the backend on **Cloud Run**. The backend calls **Vertex AI** (Gemini Flash for vision/script, Imagen 3 for images, Gemini Live/TTS for audio) and **Cloud Storage** for image URLs, then streams audio, text, and image URLs back to the browser.
+
+**Pipeline (text view):**
+
 ```
 Browser (Next.js)
 ├── Camera / File Upload ──────────────────────┐

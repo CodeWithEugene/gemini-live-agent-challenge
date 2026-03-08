@@ -7,6 +7,7 @@ class Settings(BaseSettings):
     gcs_bucket_name: str
     google_application_credentials: str = ""
     gemini_live_model: str = "gemini-2.0-flash-live-001"
+    gemini_tts_model: str = ""  # If set, use TTS API for verbatim narration (e.g. gemini-2.5-flash-tts)
     gemini_flash_model: str = "gemini-2.0-flash-001"
     imagen_model: str = "imagen-3.0-generate-002"
 

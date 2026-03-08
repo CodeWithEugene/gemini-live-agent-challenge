@@ -117,6 +117,64 @@ This script:
 4. Deploys the FastAPI backend to Cloud Run
 5. Prints the live WebSocket URL to configure the frontend
 
+### Cloud Run service account IAM (required for image generation)
+
+For **image generation (Imagen 3)** and **GCS uploads** to work on the live site, the Cloud Run service account must have:
+
+| Role | Purpose |
+|------|--------|
+| **Vertex AI User** (`roles/aiplatform.user`) | Call Imagen 3 to generate diagrams |
+| **Storage Object Admin** (or **Object Creator** + **Object Viewer**) (`roles/storage.objectAdmin` or `roles/storage.objectCreator` + `roles/storage.objectViewer`) | Upload images to GCS and create URLs for the frontend |
+
+Grant them (replace `SERVICE_ACCOUNT` and `PROJECT_ID` with your values):
+
+```bash
+gcloud projects add-iam-policy-binding PROJECT_ID \
+  --member="serviceAccount:SERVICE_ACCOUNT" \
+  --role="roles/aiplatform.user"
+
+gcloud projects add-iam-policy-binding PROJECT_ID \
+  --member="serviceAccount:SERVICE_ACCOUNT" \
+  --role="roles/storage.objectAdmin"
+```
+
+If images work locally but not on the live site, check Cloud Run logs for `Imagen generation error` or `Signed URL failed` / `make_public failed`. Without **Vertex AI User**, Imagen calls return errors. Without storage permissions, uploads or URL generation fail. If signed URL generation fails on Cloud Run (e.g. missing key), the backend falls back to making the object public and returning its public URL — ensure the bucket allows that or grant the service account **Service Account Token Creator** on itself to use signed URLs instead.
+
+### Verbatim narration (TTS) — local, manual deploy, and Vertex AI
+
+**Local:** With `GEMINI_TTS_MODEL=gemini-2.5-flash-tts` in `backend/.env`, just run the backend as usual. Narration will use the TTS API.
+
+```bash
+cd backend
+source .venv/bin/activate   # if you use a venv
+python3 main.py
+```
+
+**Cloud Run (manual deploy):** If you deploy with your own `gcloud run deploy` command, include `GEMINI_TTS_MODEL=gemini-2.5-flash-tts` in `--set-env-vars`. Example (add it to the comma-separated list):
+
+```bash
+gcloud run deploy living-textbook-api \
+  --image=us-central1-docker.pkg.dev/windy-shoreline-488719-s2/cloud-run-source-deploy/living-textbook-api:latest \
+  --platform=managed --region=us-central1 --project=windy-shoreline-488719-s2 \
+  --set-env-vars="GOOGLE_CLOUD_PROJECT=windy-shoreline-488719-s2,GOOGLE_CLOUD_LOCATION=us-central1,GCS_BUCKET_NAME=gemini_live_agent_challenge,GEMINI_TTS_MODEL=gemini-2.5-flash-tts,..."
+```
+
+Or update the existing env vars on the running service without redeploying the image:
+
+```bash
+gcloud run services update living-textbook-api \
+  --region=us-central1 \
+  --project=windy-shoreline-488719-s2 \
+  --set-env-vars="GOOGLE_CLOUD_PROJECT=windy-shoreline-488719-s2,GOOGLE_CLOUD_LOCATION=us-central1,GCS_BUCKET_NAME=gemini_live_agent_challenge,GEMINI_TTS_MODEL=gemini-2.5-flash-tts,GEMINI_LIVE_MODEL=gemini-2.0-flash-live-preview-04-09,GEMINI_FLASH_MODEL=gemini-2.0-flash-001,IMAGEN_MODEL=imagen-3.0-generate-002"
+```
+
+**Vertex AI — enable the TTS model:** The Gemini 2.5 Flash TTS model must be available in your project.
+
+1. Open [Vertex AI Studio](https://console.cloud.google.com/vertex-ai/studio/overview?project=windy-shoreline-488719-s2).
+2. Ensure the **Vertex AI API** is enabled: [Enable Vertex AI API](https://console.cloud.google.com/apis/library/aiplatform.googleapis.com?project=windy-shoreline-488719-s2).
+3. In Vertex AI Studio, try **Language** or **Generate speech** (or check the model list). If `gemini-2.5-flash-tts` appears and you can use it, the model is enabled.
+4. If you get “model not found” or 404 when running the app, check [Vertex AI model availability](https://cloud.google.com/vertex-ai/generative-ai/docs/available-models) for your region (`us-central1`) and enable any required “Generative AI” or “Speech” APIs listed there.
+
 ### CI/CD via Cloud Build
 
 `deploy/cloudbuild.yaml` defines an automated pipeline. Connect it to your GitHub repository in the GCP Console under **Cloud Build → Triggers** and it will deploy on every push to `main`.
@@ -143,6 +201,7 @@ NEXT_PUBLIC_WS_URL=wss://your-cloud-run-url/ws npm run build
 | `GCS_BUCKET_NAME` | Cloud Storage bucket for generated images |
 | `GOOGLE_APPLICATION_CREDENTIALS` | Path to service account JSON (local dev only) |
 | `GEMINI_LIVE_MODEL` | Override Live API model (default: `gemini-2.0-flash-live-001`) |
+| `GEMINI_TTS_MODEL` | If set (e.g. `gemini-2.5-flash-tts`), use TTS API for verbatim narration instead of Live (avoids narrator “answering” or adding words) |
 | `GEMINI_FLASH_MODEL` | Override Flash model (default: `gemini-2.0-flash-001`) |
 | `IMAGEN_MODEL` | Override Imagen model (default: `imagen-3.0-generate-002`) |
 

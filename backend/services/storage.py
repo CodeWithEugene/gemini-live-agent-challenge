@@ -36,12 +36,25 @@ async def upload_image_bytes(
     blob = bucket.blob(destination_name)
     blob.upload_from_string(image_bytes, content_type=content_type)
 
-    # Generate a signed URL valid for 1 hour
-    url = blob.generate_signed_url(
-        expiration=datetime.timedelta(hours=1),
-        method="GET",
-        version="v4",
-    )
+    # Prefer signed URL; on Cloud Run (no key file) V4 signing can fail, so fall back to public URL
+    try:
+        url = blob.generate_signed_url(
+            expiration=datetime.timedelta(hours=1),
+            method="GET",
+            version="v4",
+        )
+    except (ValueError, AttributeError, TypeError) as e:
+        err_str = str(e)
+        if "GoogleAccessID" in err_str or "credentials" in err_str.lower():
+            logger.warning("Signed URL failed (e.g. no key on Cloud Run), trying public URL: %s", e)
+            try:
+                blob.make_public()
+                url = blob.public_url
+            except Exception as pub_err:
+                logger.error("make_public failed (bucket may block public access): %s", pub_err)
+                raise e from pub_err
+        else:
+            raise
 
     logger.info("Uploaded %d bytes to gs://%s/%s", len(image_bytes), settings.gcs_bucket_name, destination_name)
     return url

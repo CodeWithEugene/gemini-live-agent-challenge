@@ -76,7 +76,7 @@ gcloud run deploy "${SERVICE_NAME}" \
   --max-instances=10 \
   --memory=1Gi \
   --cpu=1 \
-  --set-env-vars="GOOGLE_CLOUD_PROJECT=${GCP_PROJECT},GOOGLE_CLOUD_LOCATION=${REGION},GCS_BUCKET_NAME=${GCS_BUCKET}"
+  --set-env-vars="GOOGLE_CLOUD_PROJECT=${GCP_PROJECT},GOOGLE_CLOUD_LOCATION=${REGION},GCS_BUCKET_NAME=${GCS_BUCKET},GEMINI_TTS_MODEL=gemini-2.5-flash-tts"
 
 # ---------------------------------------------------------------------------
 # 5. Get the service URL

@@ -21,6 +21,10 @@ async def generate_section_image(
         image_bytes = await generate_image(image_prompt)
         if not image_bytes:
             logger.warning("No image bytes returned for section %d", section_id)
+            await send_queue.put({
+                "type": "status",
+                "content": f"Image for section {section_id + 1} couldn't be generated.",
+            })
             return None
 
         url = await upload_image_bytes(
@@ -40,6 +44,10 @@ async def generate_section_image(
 
     except Exception as exc:
         logger.error("Image generation failed for section %d: %s", section_id, exc)
+        await send_queue.put({
+            "type": "status",
+            "content": f"Image for section {section_id + 1} couldn't be generated.",
+        })
         return None
 
 

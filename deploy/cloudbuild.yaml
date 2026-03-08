@@ -43,7 +43,7 @@ steps:
       - "--min-instances=1"
       - "--max-instances=10"
       - "--memory=1Gi"
-      - "--set-env-vars=GOOGLE_CLOUD_PROJECT=$PROJECT_ID,GOOGLE_CLOUD_LOCATION=${_REGION},GCS_BUCKET_NAME=${_GCS_BUCKET}"
+      - "--set-env-vars=GOOGLE_CLOUD_PROJECT=$PROJECT_ID,GOOGLE_CLOUD_LOCATION=${_REGION},GCS_BUCKET_NAME=${_GCS_BUCKET},GEMINI_TTS_MODEL=gemini-2.5-flash-tts"
 
 substitutions:
   _SERVICE_NAME: living-textbook-api

@@ -3,13 +3,8 @@
 .env.local
 *.env
 
-# Google service account credentials
-*.json
-!package.json
-!package-lock.json
-!tsconfig.json
-!components.json
-!next-env.d.ts
+# Google service account credentials (match key file naming pattern only)
+*-[0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f]*.json
 
 # Python
 __pycache__/

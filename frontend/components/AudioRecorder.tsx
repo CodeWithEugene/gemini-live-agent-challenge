@@ -19,6 +19,12 @@ declare global {
   }
 }
 
+/** Error event for Web Speech API; not in default DOM typings. */
+interface SpeechRecognitionErrorEvent {
+  error: string;
+  message?: string;
+}
+
 interface SpeechRecognitionInstance extends EventTarget {
   lang: string;
   continuous: boolean;
